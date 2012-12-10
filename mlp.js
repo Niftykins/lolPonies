@@ -27,10 +27,13 @@ function lolPonies() {
 
 	this.update = function() {
 		var move = 2;
+		var cur_x = player.x;
+		var cur_y = player.y;
 		if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.anim_left.next()) }
 		else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.anim_right.next()) }
 		else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.anim_up.next()) }
 		else if(jaws.pressed("down") || jaws.pressed("s"))  { player.move(0, move);  player.setImage(player.anim_down.next()) }
+		if (player.x !== cur_x || player.y !== cur_y) socket.emit('player_move', {x: player.x, y: player.y})
 	} //end of update
 
 	this.draw = function() {
@@ -43,6 +46,10 @@ function lolPonies() {
 		console.log(friend)
 		console.log("wdwd")
 		friends.push(new Sprite({image: anim.frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"}));
+	});
+	
+	socket.on('player_move', function (data) {
+		console.log('player_move: ', data);
 	});
 } //end of lolPonies
 
