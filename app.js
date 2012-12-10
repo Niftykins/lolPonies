@@ -20,7 +20,7 @@ io.sockets.on('connection', function (socket) {
 	console.log(id+' has connected')
 	socket.id = id;
 	players[socket.id] = {x: 256, y: 256, id: socket.id};
-	id++;
+	id += 1;
 	socket.broadcast.emit('updateplayers', players[socket.id]);
 
 	socket.on('receivedata', function (data) {
