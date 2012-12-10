@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="jaws-min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="mlp.js"></script>
+
+	<title>kek</title>
+
+	<style>
+  	#kek {
+	    position: absolute;
+	    border: solid 2px #000;
+	    left: 50%;
+	    top: 50%; 
+	    margin-left: -400px;
+	    margin-top: -250px;
+	}
+	</style>
+</head>
+<body>
+	<canvas id="kek" width=800 height=500></canvas>
+	<script>
+	var socket = io.connect();
+
+	jaws.onload = function() {
+		jaws.unpack();
+		jaws.assets.add(["images/flutter.png"]);
+		jaws.start(lolPonies);
+	}
+	</script>
+</body>
+</html>
