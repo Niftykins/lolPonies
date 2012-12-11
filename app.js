@@ -18,7 +18,7 @@ var players = {};
 
 io.sockets.on('connection', function (socket) {
 	console.log(socket.id+' has connected');
-	console.log('current clients', util.inspect(io.connected));
+	//console.log('current clients', util.inspect(io.connected));
 
 	// send the new guy a list of old guys
 	if (Object.keys(players).length > 0) socket.emit('add_players', players);
@@ -31,16 +31,17 @@ io.sockets.on('connection', function (socket) {
 	socket.on('player_move', function (data) {
 		players[socket.id].x = data.x;
 		players[socket.id].y = data.y;
-		socket.broadcast.volatile.emit('player_move', players[socket.id]);
+		players[socket.id].action = data.action;
+		socket.broadcast.emit('player_move', players[socket.id]);
 	});
 
 	socket.on('disconnect', function() {
-		//if (typeof players[socket.id] === 'undefined') return;
-		//if (!(socket.id in players)) return;
+		if (typeof players[socket.id] === 'undefined') return;
+		if (!(socket.id in players)) return;
 
 		delete players[socket.id];
 		console.log(socket.id + ' has disconnect');
-		console.log('current clients', util.inspect(io.connected));
+		//console.log('current clients', util.inspect(io.connected));
 		io.sockets.emit('remove_player', socket.id);
 	});
 });

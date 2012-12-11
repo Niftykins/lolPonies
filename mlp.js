@@ -10,10 +10,8 @@ function lolPonies() {
 	this.setup = function() {
 		player = new jaws.Sprite({x: 256, y:256, scale: 2, anchor: "center"});
 		player.move = function(x,y) {
-			//if (this.x + x > 16 && this.x + x < MAX_X-16)
-				this.x += x
-			//if (this.y + y > 0 && this.y + y < MAX_Y)
-				this.y += y
+				this.x += x;
+				this.y += y;
 		} //end of move
 
 		anim = new jaws.Animation({sprite_sheet: image, frame_size: [32,32], frame_duration: 150});
@@ -31,15 +29,29 @@ function lolPonies() {
 		var move = 2;
 		var cur_x = player.x;
 		var cur_y = player.y;
-		if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.anim_left.next()) }
-		else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.anim_right.next()) }
-		else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.anim_up.next()) }
-		else if(jaws.pressed("down") || jaws.pressed("s"))  { player.move(0, move);  player.setImage(player.anim_down.next()) }
+		var action = 'acting like a pony';
+		if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.anim_left.next()); action = 'left'; }
+		else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.anim_right.next()); action = 'right'; }
+		else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.anim_up.next()); action = 'up'; }
+		else if(jaws.pressed("down") || jaws.pressed("s"))  { player.move(0, move);  player.setImage(player.anim_down.next()); action = 'down'; }
 
 		forceInside(player);
 
-		if (player.x !== cur_x || player.y !== cur_y) socket.emit('player_move', {x: player.x, y: player.y});
+		if (player.x !== cur_x || player.y !== cur_y) socket.emit('player_move', {x: player.x, y: player.y, action: action});
 	} //end of update
+
+	function meow(data) {
+		this.x = data.x;
+		this.y = data.y;
+		switch(data.action) {
+			case "left": this.setImage(this.anim_left.next()); break;
+			case "right": this.setImage(this.anim_right.next()); break;
+			case "up": this.setImage(this.anim_up.next()); break;
+			case "down": this.setImage(this.anim_down.next()); break;
+			default: break;
+		} 
+		
+	} //end of friends.update
 
 	this.draw = function() {
 		jaws.clear()
@@ -64,7 +76,7 @@ function lolPonies() {
 		id_list[friend.id] = friend.id; // add new guy to the id list
 		//console.log('friends: ', id_list);
 		var sprite = new Sprite({image: anim.frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"})
-		sprite.id = friend.id;
+		assignShit(sprite,friend.id);
 		friends.push(sprite);
 	});
 
@@ -74,7 +86,7 @@ function lolPonies() {
 		for(friend in friends_list) { //here friend is the id, index?
 			id_list[friend] = friends_list[friend].id; // add the old guys to the id list
 			var sprite = new Sprite({image: anim.frames[0], x: friends_list[friend].x, y: friends_list[friend].y, scale: 2, anchor: "center"});
-			sprite.id = friends_list[friend].id;
+			assignShit(sprite,friends_list[friend].id);
 			friends.push(sprite);
 		}
 		//console.log('friends: ', id_list)
@@ -83,7 +95,7 @@ function lolPonies() {
 	// when a friend leaves - delete them from the list
 	socket.on('remove_player', function (id) {
 		delete id_list[id];
-		console.log('friends:', id_list);
+		//console.log('friends:', id_list);
 		friends.deleteIf(function(sprite) {
 			return !(sprite.id in id_list);
 		});
@@ -93,17 +105,20 @@ function lolPonies() {
 		//console.log('player_move: ', data);
 		friends.forEach(function(sprite) {
 			if (sprite.id == data.id) {
-				sprite.x = data.x;
-				sprite.y = data.y;
+				sprite.meow(data);
 			}
 		});
+
+		//friends.updateIf(function(sprite) {
+			//return (sprite.id in id_list);
+		//})
 	});
 
 	socket.on('id', function (myID) {
 		MY_ID = myID;
 	});
 
-	function text(array) {
+	function text(array) { // shows a list of ids for people connected
 		jaws.context.font = "bold 20pt terminal";
 		jaws.context.lineWidth = 10;
 		jaws.context.fillStyle = "Red";
@@ -115,6 +130,16 @@ function lolPonies() {
 			jaws.context.fillText(id_list[i], 10, 25+count*25);
 			count += 1;
 		}
+	}
+
+	function assignShit(sprite, id) {
+		sprite.id = id;
+		sprite.anim_default = anim.frames[0];
+		sprite.anim_down = anim.slice(0,4); 
+		sprite.anim_up = anim.slice(12,16);
+		sprite.anim_left = anim.slice(4,8);
+		sprite.anim_right = anim.slice(8,12);
+		sprite.meow = meow
 	}
 } //end of lolPonies
 
