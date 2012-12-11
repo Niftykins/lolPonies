@@ -1,3 +1,9 @@
+jaws.onload = function() {
+	jaws.unpack();
+	jaws.assets.add(["images/flutter.png"]);
+	jaws.start(lolPonies, {fps: 30});
+}
+
 function lolPonies() {
 	var player;
 	var MAX_X = 800, MAX_Y = 500;
@@ -8,6 +14,7 @@ function lolPonies() {
 	var MY_ID = "super cool kid"
 
 	this.setup = function() {
+		socket.emit('init', 'fluttershy');
 		player = new jaws.Sprite({x: 256, y:256, scale: 2, anchor: "center"});
 		player.move = function(x,y) {
 				this.x += x;
@@ -26,7 +33,12 @@ function lolPonies() {
 	} //end of setup
 
 	this.update = function() {
-		var move = 2;
+		//var move = 2*(1+(2 / jaws.game_loop.tick_duration));
+		var move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
+		document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
+		document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
+		document.getElementById("speed").innerHTML = "speed: "+ move+"<br>";
+		document.getElementById("speed2").innerHTML = "p/s: "+ (move*jaws.game_loop.fps);
 		var cur_x = player.x;
 		var cur_y = player.y;
 		var action = 'acting like a pony';

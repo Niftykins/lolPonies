@@ -20,19 +20,22 @@ io.sockets.on('connection', function (socket) {
 	console.log(socket.id+' has connected');
 	//console.log('current clients', util.inspect(io.connected));
 
-	// send the new guy a list of old guys
-	if (Object.keys(players).length > 0) socket.emit('add_players', players);
-	socket.emit('id', socket.id) // new guy needs an id
+	// new guy sends us their pony choice
+	socket.on('init', function (pony) {
+		// send the new guy a list of old guys
+		if (Object.keys(players).length > 0) socket.emit('add_players', players);
+		socket.emit('id', socket.id) // new guy needs an id
 
-	players[socket.id] = {x: 256, y: 256, id: socket.id};
-	// send the old guys the new guy
-	socket.broadcast.emit('new_player', players[socket.id]);
+		players[socket.id] = {x: 256, y: 256, id: socket.id, pony: pony};
+		// send the old guys the new guy
+		socket.broadcast.emit('new_player', players[socket.id]);
+	});
 
 	socket.on('player_move', function (data) {
 		players[socket.id].x = data.x;
 		players[socket.id].y = data.y;
 		players[socket.id].action = data.action;
-		socket.broadcast.emit('player_move', players[socket.id]);
+		socket.broadcast.volatile.emit('player_move', players[socket.id]);
 	});
 
 	socket.on('disconnect', function() {
