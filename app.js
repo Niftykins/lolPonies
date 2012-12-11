@@ -12,27 +12,35 @@ function handler (req, res) {
 }
 
 io.set('log level',1);
-app.listen(8001);
+app.listen(80);
 
 var players = {};
 
 io.sockets.on('connection', function (socket) {
 	console.log(socket.id+' has connected');
 	console.log('current clients', util.inspect(io.connected));
+
+	// send the new guy a list of old guys
+	if (Object.keys(players).length > 0) socket.emit('add_players', players);
+	socket.emit('id', socket.id) // new guy needs an id
+
 	players[socket.id] = {x: 256, y: 256, id: socket.id};
-	socket.broadcast.emit('updateplayers', players[socket.id]);
+	// send the old guys the new guy
+	socket.broadcast.emit('new_player', players[socket.id]);
 
 	socket.on('player_move', function (data) {
 		players[socket.id].x = data.x;
 		players[socket.id].y = data.y;
-		socket.broadcast.emit('player_move', players[socket.id]);
+		socket.broadcast.volatile.emit('player_move', players[socket.id]);
 	});
 
 	socket.on('disconnect', function() {
-		if (typeof players[socket.id] === 'undefined') return;
+		//if (typeof players[socket.id] === 'undefined') return;
+		//if (!(socket.id in players)) return;
 
 		delete players[socket.id];
 		console.log(socket.id + ' has disconnect');
-		//io.sockets.emit('updateusers', players);
+		console.log('current clients', util.inspect(io.connected));
+		io.sockets.emit('remove_player', socket.id);
 	});
 });
