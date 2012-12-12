@@ -27,11 +27,13 @@ io.sockets.on('connection', function (socket) {
 		socket.emit('id', socket.id) // new guy needs an id
 
 		players[socket.id] = {x: 256, y: 256, id: socket.id, pony: pony};
+		console.log(socket.id, players[socket.id].pony)
 		// send the old guys the new guy
 		socket.broadcast.emit('new_player', players[socket.id]);
 	});
 
 	socket.on('player_move', function (data) {
+		if (!(socket.id in players)) return;
 		players[socket.id].x = data.x;
 		players[socket.id].y = data.y;
 		players[socket.id].action = data.action;
@@ -40,7 +42,7 @@ io.sockets.on('connection', function (socket) {
 
 	socket.on('disconnect', function() {
 		if (typeof players[socket.id] === 'undefined') return;
-		if (!(socket.id in players)) return;
+		//if (!(socket.id in players)) return;
 
 		delete players[socket.id];
 		console.log(socket.id + ' has disconnect');

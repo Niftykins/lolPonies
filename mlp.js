@@ -1,32 +1,42 @@
+var pony;
+var move;
 jaws.onload = function() {
 	jaws.unpack();
-	jaws.assets.add(["images/flutter.png"]);
-	jaws.start(lolPonies, {fps: 30});
+	jaws.assets.root = "images/";
+	jaws.assets.add(["flutter.png","apple.png","pinkie.png","rainbow.png","twilight.png","rarity.png"]);
+	jaws.start(lolMenu, {fps: 30});
 }
 
 function lolPonies() {
 	var player;
 	var MAX_X = 800, MAX_Y = 500;
-	var image = 'images/flutter.png';
+	var image = 'flutter.png';
 	var friends = new SpriteList();
-	var anim;
+	var anim = {};
 	var id_list = {};
 	var MY_ID = "super cool kid"
 
 	this.setup = function() {
-		socket.emit('init', 'fluttershy');
+
+		socket.emit('init', pony);
 		player = new jaws.Sprite({x: 256, y:256, scale: 2, anchor: "center"});
 		player.move = function(x,y) {
 				this.x += x;
 				this.y += y;
 		} //end of move
 
-		anim = new jaws.Animation({sprite_sheet: image, frame_size: [32,32], frame_duration: 150});
-		player.default = anim.frames[0];
-		player.down = anim.slice(0,4); 
-		player.up = anim.slice(12,16);
-		player.left = anim.slice(4,8);
-		player.right = anim.slice(8,12);
+		anim["Fluttershy"] = new jaws.Animation({sprite_sheet: "flutter.png", frame_size: [32,32], frame_duration: 150});
+		anim["Applejack"] = new jaws.Animation({sprite_sheet: "apple.png", frame_size: [32,32], frame_duration: 150});
+		anim["Rainbow Dash"] = new jaws.Animation({sprite_sheet: "rainbow.png", frame_size: [32,32], frame_duration: 150});
+		anim["Pinkie Pie"] = new jaws.Animation({sprite_sheet: "pinkie.png", frame_size: [32,32], frame_duration: 150});
+		anim["Twilight Sparkle"] = new jaws.Animation({sprite_sheet: "twilight.png", frame_size: [32,32], frame_duration: 150});
+		anim["Rarity"] = new jaws.Animation({sprite_sheet: "rarity.png", frame_size: [32,32], frame_duration: 150});
+
+		player.default = anim[pony].frames[0];
+		player.down = anim[pony].slice(0,4); 
+		player.up = anim[pony].slice(12,16);
+		player.left = anim[pony].slice(4,8);
+		player.right = anim[pony].slice(8,12);
 
 		player.setImage(player.default);
 		jaws.preventDefaultKeys(["up", "down", "left", "right", "space", "w", "a", "s", "d"]);
@@ -34,11 +44,12 @@ function lolPonies() {
 
 	this.update = function() {
 		//var move = 2*(1+(2 / jaws.game_loop.tick_duration));
-		var move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
+		move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
 		document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
 		document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
 		document.getElementById("speed").innerHTML = "speed: "+ move+"<br>";
 		document.getElementById("speed2").innerHTML = "p/s: "+ (move*jaws.game_loop.fps);
+		if (move > 20)	return;
 		var cur_x = player.x;
 		var cur_y = player.y;
 		var action = 'acting like a pony';
@@ -68,13 +79,15 @@ function lolPonies() {
 
 	this.draw = function() {
 		jaws.clear()
-		text();
+		//text();
 		player.draw()
 
 		// only draw if the sprite is in the id list
 		friends.drawIf(function(sprite) {
 			return (sprite.id in id_list);
 		});
+
+		document.getElementById("players").innerHTML = "<br><br>players: "+ (Object.keys(id_list).length+1);
 	} //end of draw
 
 	function forceInside(item) { // stay in the box you naughty pony!
@@ -88,7 +101,7 @@ function lolPonies() {
 	socket.on('new_player', function (friend) {
 		id_list[friend.id] = friend.id; // add new guy to the id list
 		//console.log('friends: ', id_list);
-		var sprite = new Sprite({image: anim.frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"})
+		var sprite = new Sprite({image: anim[friend.pony].frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"})
 		assignShit(sprite,friend);
 		friends.push(sprite);
 	});
@@ -98,7 +111,7 @@ function lolPonies() {
 		//console.log('friends list: ', friends_list);
 		for(friend in friends_list) { //here friend is the id, index?
 			id_list[friend] = friends_list[friend].id; // add the old guys to the id list
-			var sprite = new Sprite({image: anim.frames[0], x: friends_list[friend].x, y: friends_list[friend].y, scale: 2, anchor: "center"});
+			var sprite = new Sprite({image: anim[friends_list[friend].pony].frames[0], x: friends_list[friend].x, y: friends_list[friend].y, scale: 2, anchor: "center"});
 			assignShit(sprite,friends_list[friend]);
 			friends.push(sprite);
 		}
@@ -143,13 +156,37 @@ function lolPonies() {
 
 	function assignShit(sprite, data) {
 		sprite.id = data.id;
-		sprite.default = anim.frames[0];
-		sprite.down = anim.slice(0,4); 
-		sprite.up = anim.slice(12,16);
-		sprite.left = anim.slice(4,8);
-		sprite.right = anim.slice(8,12);
+		sprite.default = anim[data.pony].frames[0];
+		sprite.down = anim[data.pony].slice(0,4); 
+		sprite.up = anim[data.pony].slice(12,16);
+		sprite.left = anim[data.pony].slice(4,8);
+		sprite.right = anim[data.pony].slice(8,12);
 		sprite.meow = meow;
 		sprite.meow(data);
 	}
 } //end of lolPonies
 
+function lolMenu() {
+		var index = 0;
+		var items = ["Applejack", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Twilight Sparkle"];
+
+		this.setup = function() {
+			index = 0;
+			jaws.on_keydown(["down", "s"], function() { index++; if(index >= items.length) {index=items.length-1} } );
+			jaws.on_keydown(["up","w"], function() { index--; if(index < 0) {index=0} } );
+			jaws.on_keydown(["enter","space"], function() { pony=items[index]; jaws.switchGameState(lolPonies) } );
+		} //end of setup
+
+		this.draw = function() {
+			move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
+
+			jaws.clear();
+			for(var i=0; items[i]; i++) {
+				jaws.context.font = "bold 50pt terminal";
+				jaws.context.lineWidth = 10;
+				jaws.context.fillStyle = (i==index) ? "Red" : "Black";
+				jaws.context.strokeStyle = "rgba(200,200,200,0.0)";
+				jaws.context.fillText(items[i], 30, 100+i*65);
+			} //end of draw
+		}
+	} //end of lolMenu
