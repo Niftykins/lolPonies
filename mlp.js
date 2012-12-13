@@ -1,5 +1,4 @@
 var pony;
-var move;
 jaws.onload = function() {
 	jaws.unpack();
 	jaws.assets.root = "images/";
@@ -10,7 +9,6 @@ jaws.onload = function() {
 function lolPonies() {
 	var player;
 	var MAX_X = 800, MAX_Y = 500;
-	var image = 'flutter.png';
 	var friends = new SpriteList();
 	var anim = {};
 	var id_list = {};
@@ -43,16 +41,17 @@ function lolPonies() {
 	} //end of setup
 
 	this.update = function() {
-		//var move = 2*(1+(2 / jaws.game_loop.tick_duration));
-		move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
+		var move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
+		if (move > 20)	return; // stops it being jump initially
+
 		document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
 		document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
-		document.getElementById("speed").innerHTML = "speed: "+ move+"<br>";
-		document.getElementById("speed2").innerHTML = "p/s: "+ (move*jaws.game_loop.fps);
-		if (move > 20)	return;
-		var cur_x = player.x;
-		var cur_y = player.y;
+		document.getElementById("speed").innerHTML = "<br>speed: "+ move;
+		document.getElementById("speed2").innerHTML = "<br>p/s: "+ (move*jaws.game_loop.fps);
+		
+		var cur_x = player.x, cur_y = player.y;
 		var action = 'acting like a pony';
+
 		if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.left.next()); action = 'left'; }
 		else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.right.next()); action = 'right'; }
 		else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.up.next()); action = 'up'; }
@@ -74,12 +73,10 @@ function lolPonies() {
 			case "down": this.setImage(this.down.next()); break;
 			default: break;
 		} 
-		
 	} //end of friends.update
 
 	this.draw = function() {
 		jaws.clear()
-		//text();
 		player.draw()
 
 		// only draw if the sprite is in the id list
@@ -100,7 +97,6 @@ function lolPonies() {
 	// when a new player connects - add them to friends list!
 	socket.on('new_player', function (friend) {
 		id_list[friend.id] = friend.id; // add new guy to the id list
-		//console.log('friends: ', id_list);
 		var sprite = new Sprite({image: anim[friend.pony].frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"})
 		assignShit(sprite,friend);
 		friends.push(sprite);
@@ -108,27 +104,24 @@ function lolPonies() {
 
 	// when we join - add all the other friends!
 	socket.on('add_players', function (friends_list) {
-		//console.log('friends list: ', friends_list);
-		for(friend in friends_list) { //here friend is the id, index?
-			id_list[friend] = friends_list[friend].id; // add the old guys to the id list
-			var sprite = new Sprite({image: anim[friends_list[friend].pony].frames[0], x: friends_list[friend].x, y: friends_list[friend].y, scale: 2, anchor: "center"});
-			assignShit(sprite,friends_list[friend]);
+		for(thing in friends_list) { //here friend is the id, index?
+			var friend = friends_list[thing];
+			id_list[friend.id] = friend.id; // add the old guys to the id list
+			var sprite = new Sprite({image: anim[friend.pony].frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"});
+			assignShit(sprite,friend);
 			friends.push(sprite);
 		}
-		//console.log('friends: ', id_list)
 	});
 	
 	// when a friend leaves - delete them from the list
 	socket.on('remove_player', function (id) {
 		delete id_list[id];
-		//console.log('friends:', id_list);
 		friends.deleteIf(function(sprite) {
 			return !(sprite.id in id_list);
 		});
 	})
 
 	socket.on('player_move', function (data) {
-		//console.log('player_move: ', data);
 		friends.forEach(function(sprite) {
 			if (sprite.id == data.id) {
 				sprite.meow(data);
@@ -139,20 +132,6 @@ function lolPonies() {
 	socket.on('id', function (myID) {
 		MY_ID = myID;
 	});
-
-	function text(array) { // shows a list of ids for people connected
-		jaws.context.font = "bold 20pt terminal";
-		jaws.context.lineWidth = 10;
-		jaws.context.fillStyle = "Red";
-		jaws.context.strokeStyle = "rgba(200,200,200,0.0)";
-		jaws.context.fillText(MY_ID, 10, 25);
-		jaws.context.fillStyle = "Black"
-		var count = 1;
-		for (var i in id_list) {
-			jaws.context.fillText(id_list[i], 10, 25+count*25);
-			count += 1;
-		}
-	}
 
 	function assignShit(sprite, data) {
 		sprite.id = data.id;
@@ -178,7 +157,6 @@ function lolMenu() {
 		} //end of setup
 
 		this.draw = function() {
-			move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
 
 			jaws.clear();
 			for(var i=0; items[i]; i++) {
