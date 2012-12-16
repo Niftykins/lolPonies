@@ -40,6 +40,11 @@ io.sockets.on('connection', function (socket) {
 		socket.broadcast.volatile.emit('player_move', players[socket.id]);
 	});
 
+	socket.on('message', function (data) {
+		console.log(socketid,": ",data);
+		socket.broadcast.emit('message', data, socket.id);
+	});
+
 	socket.on('disconnect', function() {
 		if (typeof players[socket.id] === 'undefined') return;
 		//if (!(socket.id in players)) return;

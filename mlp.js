@@ -8,7 +8,6 @@ jaws.onload = function() {
 
 function lolPonies() {
 	var player;
-	var MAX_X = 800, MAX_Y = 500;
 	var friends = new SpriteList();
 	var anim = {};
 	var id_list = {};
@@ -18,10 +17,7 @@ function lolPonies() {
 
 		socket.emit('init', pony);
 		player = new jaws.Sprite({x: 256, y:256, scale: 2, anchor: "center"});
-		player.move = function(x,y) {
-				this.x += x;
-				this.y += y;
-		} //end of move
+		player.move = function(x,y) { this.x += x; this.y += y;	} //end of move
 
 		anim["Fluttershy"] = new jaws.Animation({sprite_sheet: "flutter.png", frame_size: [32,32], frame_duration: 150});
 		anim["Applejack"] = new jaws.Animation({sprite_sheet: "apple.png", frame_size: [32,32], frame_duration: 150});
@@ -35,32 +31,58 @@ function lolPonies() {
 		player.up = anim[pony].slice(12,16);
 		player.left = anim[pony].slice(4,8);
 		player.right = anim[pony].slice(8,12);
+		player.message = '';
 
 		player.setImage(player.default);
-		jaws.preventDefaultKeys(["up", "down", "left", "right", "space", "w", "a", "s", "d"]);
+		jaws.preventDefaultKeys(["up", "down", "left", "right", "backspace"]);
 	} //end of setup
 
+	var typing = false;
 	this.update = function() {
 		var move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
 		if (move > 20)	return; // stops it being jump initially
 
-		document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
-		document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
-		document.getElementById("speed").innerHTML = "<br>speed: "+ move;
-		document.getElementById("speed2").innerHTML = "<br>p/s: "+ (move*jaws.game_loop.fps);
+	//	document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
+	//	document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
+	//	document.getElementById("speed").innerHTML = "<br>speed: "+ move;
+	//	document.getElementById("speed2").innerHTML = "<br>p/s: "+ (move*jaws.game_loop.fps);
 		
 		var cur_x = player.x, cur_y = player.y;
 		var action = 'acting like a pony';
 
-		if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.left.next()); action = 'left'; }
-		else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.right.next()); action = 'right'; }
-		else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.up.next()); action = 'up'; }
-		else if(jaws.pressed("down") || jaws.pressed("s"))  { player.move(0, move);  player.setImage(player.down.next()); action = 'down'; }
+		jaws.on_keydown("enter", function() {
+			if (typing) {
+				typing = false;
+				socket.emit('message', player.message);
+				player.time = (new Date).getTime();
+			} else {
+				typing = true;
+				player.message = '';
+			}
 
+		});
+		jaws.on_keydown("backspace", function () {
+			player.message = player.message.substring(0,player.message.length-1);
+		})
+
+
+		if (!typing) {
+			if(jaws.pressed("left") || jaws.pressed("a"))  { player.move(-move,0);  player.setImage(player.left.next()); action = 'left'; }
+			else if(jaws.pressed("right") || jaws.pressed("d")) { player.move(move,0);   player.setImage(player.right.next()); action = 'right'; }
+			else if(jaws.pressed("up") || jaws.pressed("w"))    { player.move(0, -move); player.setImage(player.up.next()); action = 'up'; }
+			else if(jaws.pressed("down") || jaws.pressed("s"))  { player.move(0, move);  player.setImage(player.down.next()); action = 'down'; }
+		}
 		forceInside(player);
 
 		if (player.x !== cur_x || player.y !== cur_y) socket.emit('player_move', {x: player.x, y: player.y, action: action});
 	} //end of update
+
+	$(document).keypress(function(e) {
+		if (typing) {
+    		var charStr = String.fromCharCode(e.keyCode);
+    		player.message = player.message+charStr;
+	    }
+	});
 
 
 	function meow(data) {
@@ -84,7 +106,9 @@ function lolPonies() {
 			return (sprite.id in id_list);
 		});
 
-		document.getElementById("players").innerHTML = "<br><br>players: "+ (Object.keys(id_list).length+1);
+		text();
+
+		//document.getElementById("players").innerHTML = "<br><br>players: "+ (Object.keys(id_list).length+1);
 	} //end of draw
 
 	function forceInside(item) { // stay in the box you naughty pony!
@@ -96,7 +120,7 @@ function lolPonies() {
 
 	// when a new player connects - add them to friends list!
 	socket.on('new_player', function (friend) {
-		id_list[friend.id] = friend.id; // add new guy to the id list
+		id_list[friend.id] = { id:friend.id }; // add new guy to the id list
 		var sprite = new Sprite({image: anim[friend.pony].frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"})
 		assignShit(sprite,friend);
 		friends.push(sprite);
@@ -106,7 +130,7 @@ function lolPonies() {
 	socket.on('add_players', function (friends_list) {
 		for(thing in friends_list) { //here friend is the id, index?
 			var friend = friends_list[thing];
-			id_list[friend.id] = friend.id; // add the old guys to the id list
+			id_list[friend.id] = { id:friend.id }; // add the old guys to the id list
 			var sprite = new Sprite({image: anim[friend.pony].frames[0], x: friend.x, y: friend.y, scale: 2, anchor: "center"});
 			assignShit(sprite,friend);
 			friends.push(sprite);
@@ -133,6 +157,16 @@ function lolPonies() {
 		MY_ID = myID;
 	});
 
+	socket.on('message', function (message, id) {
+		friends.forEach(function(sprite) {
+			if (sprite.id == id) {
+				id_list[sprite.id].time = (new Date).getTime();
+				sprite.message = message;
+			}
+		})
+		//$('div#messages').append(message+'<br>');
+	});
+
 	function assignShit(sprite, data) {
 		sprite.id = data.id;
 		sprite.default = anim[data.pony].frames[0];
@@ -142,7 +176,26 @@ function lolPonies() {
 		sprite.right = anim[data.pony].slice(8,12);
 		sprite.meow = meow;
 		sprite.meow(data);
+	} //end of assignShit
+
+	function text() {
+		jaws.context.font = "15pt terminal";
+		jaws.context.textAlign = 'center';
+
+		jaws.context.fillText(player.message, player.x, player.y-50);
+		if (!typing && (((new Date).getTime() - player.time) > 5000)) player.message = '';
+
+		friends.forEach(function(sprite) {
+			if (sprite.message) {
+				jaws.context.fillText(sprite.message,sprite.x,sprite.y-50);
+
+				if (((new Date).getTime() - id_list[sprite.id].time) > 5000) {
+					sprite.message = null;
+				}
+			}
+		});
 	}
+
 } //end of lolPonies
 
 function lolMenu() {
@@ -168,3 +221,5 @@ function lolMenu() {
 			} //end of draw
 		}
 	} //end of lolMenu
+
+
