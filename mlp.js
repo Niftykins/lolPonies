@@ -42,13 +42,15 @@ function lolPonies() {
 		var move = 120 / jaws.game_loop.fps / (1+1/jaws.game_loop.tick_duration);
 		if (move > 20)	return; // stops it being jump initially
 
-	//	document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
-	//	document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
-	//	document.getElementById("speed").innerHTML = "<br>speed: "+ move;
-	//	document.getElementById("speed2").innerHTML = "<br>p/s: "+ (move*jaws.game_loop.fps);
+		document.getElementById("fps").innerHTML = "fps: "+ jaws.game_loop.fps;
+		document.getElementById("tick").innerHTML = "tick: "+ jaws.game_loop.tick_duration;
+		document.getElementById("speed").innerHTML = "<br>speed: "+ move;
+		document.getElementById("speed2").innerHTML = "<br>p/s: "+ (move*jaws.game_loop.fps);
 		
 		var cur_x = player.x, cur_y = player.y;
 		var action = 'acting like a pony';
+
+
 
 		jaws.on_keydown("enter", function() {
 			if (typing) {
@@ -79,7 +81,7 @@ function lolPonies() {
 
 	$(document).keypress(function(e) {
 		if (typing) {
-    		var charStr = String.fromCharCode(e.keyCode);
+    		var charStr = String.fromCharCode(e.keyCode || e.which);
     		player.message = player.message+charStr;
 	    }
 	});
@@ -108,6 +110,9 @@ function lolPonies() {
 
 		text();
 
+		if (typing) { // displays chat box
+			box(player);
+		}
 		//document.getElementById("players").innerHTML = "<br><br>players: "+ (Object.keys(id_list).length+1);
 	} //end of draw
 
@@ -182,18 +187,27 @@ function lolPonies() {
 		jaws.context.font = "15pt terminal";
 		jaws.context.textAlign = 'center';
 
-		jaws.context.fillText(player.message, player.x, player.y-50);
+		
+		if (player.message) { box(player); jaws.context.fillText(player.message, player.x, player.y-50); }
 		if (!typing && (((new Date).getTime() - player.time) > 5000)) player.message = '';
 
 		friends.forEach(function(sprite) {
 			if (sprite.message) {
 				jaws.context.fillText(sprite.message,sprite.x,sprite.y-50);
+				box(sprite)
 
 				if (((new Date).getTime() - id_list[sprite.id].time) > 5000) {
 					sprite.message = null;
 				}
 			}
 		});
+	} //end of text
+
+	function box(item) {
+		var w = jaws.context.measureText(item.message).width;
+		jaws.context.strokeStyle = "#000000";
+		jaws.context.lineWidth = 2;
+		jaws.context.strokeRect(item.x-w/2-4, (item.y-50)-20, w+10, 30);
 	}
 
 } //end of lolPonies
