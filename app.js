@@ -12,7 +12,7 @@ function handler (req, res) {
 }
 
 io.set('log level',1);
-app.listen(80);
+app.listen(8080);
 
 var players = {};
 

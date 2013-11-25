@@ -1,0 +1,2 @@
+RewriteEngine on
+RewriteRule ^(.*)$ http://niftykins.com:8080/$1 [R=301,L]
